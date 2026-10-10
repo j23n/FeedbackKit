@@ -37,11 +37,13 @@ enum FeedbackPresenter {
         window.isReleasedWhenClosed = false
         window.delegate = presentation
         presentation.window = window
-        if let parent = NSApp.keyWindow ?? NSApp.mainWindow {
+        if let parent = ScreenCapture.appWindow() {
             parent.beginSheet(window)
         } else {
+            // A menu bar app with no window open: a window of its own, brought to the front.
             window.center()
             window.makeKeyAndOrderFront(nil)
+            NSApp.activate()
         }
         #endif
     }

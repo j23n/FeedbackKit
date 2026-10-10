@@ -30,9 +30,13 @@ enum ScreenCapture {
     }
 
     #elseif canImport(AppKit)
-    /// The key window, which is a sheet when one is open.
+    /// The key window, which is a sheet when one is open; otherwise the frontmost of the app's
+    /// own windows, leaving out panels such as a menu bar extra's popover.
     static func appWindow() -> NSWindow? {
-        NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.orderedWindows.first(where: \.isVisible)
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow, !(window is NSPanel) {
+            return window
+        }
+        return NSApp.orderedWindows.first { $0.isVisible && !($0 is NSPanel) && $0.frame.width > 200 }
     }
 
     static func capture() -> Data? {
