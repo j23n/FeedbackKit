@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux · FeedbackCore
+    runs-on: ubuntu-latest
+    container: swift:6.3-noble
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: swift build -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test
+
+  apple:
+    name: macOS · package, iOS Simulator and Mac
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Test on the Mac
+        run: swift test -Xswiftc -warnings-as-errors
+      - name: Build for the iOS Simulator
+        # Runs even when the Mac failed, so one run reports both platforms' errors.
+        if: success() || failure()
+        run: >
+          xcodebuild build -quiet
+          -scheme FeedbackKit
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath "${{ runner.temp }}/DerivedData"
+          SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
