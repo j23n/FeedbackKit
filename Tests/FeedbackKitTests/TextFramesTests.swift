@@ -24,24 +24,33 @@ struct TextFramesTests {
         root.addSubview(hidden)
     }
 
-    @Test func nothingWhenTextIsKept() {
-        #expect(ScreenCapture.textFrames(in: root, hiding: .none).isEmpty)
+    @Test func nothingWhenTextIsKeptAndNothingIsMarked() {
+        #expect(ScreenCapture.maskedFrames(in: root, hiding: .none).isEmpty)
     }
 
     @Test func typedTextOnly() {
-        #expect(ScreenCapture.textFrames(in: root, hiding: .typed) == [field.frame])
+        #expect(ScreenCapture.maskedFrames(in: root, hiding: .typed) == [field.frame])
     }
 
     @Test func allTextButNotHiddenViews() {
-        let frames = ScreenCapture.textFrames(in: root, hiding: .all)
+        let frames = ScreenCapture.maskedFrames(in: root, hiding: .all)
         #expect(frames.count == 2)
         #expect(frames.contains(title.frame))
         #expect(frames.contains(field.frame))
     }
 
+    @Test func markedRegionsWhateverTheRedaction() {
+        let picker = NSPopUpButton(frame: NSRect(x: 150, y: 10, width: 120, height: 24))
+        let marker = HiddenRegionView(frame: picker.frame)
+        root.addSubview(marker)
+        root.addSubview(picker)
+        #expect(ScreenCapture.maskedFrames(in: root, hiding: .none) == [marker.frame])
+        #expect(ScreenCapture.maskedFrames(in: root, hiding: .typed).contains(marker.frame))
+    }
+
     @Test func clippedToTheView() {
         title.frame = NSRect(x: 250, y: 160, width: 120, height: 20)
-        let frames = ScreenCapture.textFrames(in: root, hiding: .all)
+        let frames = ScreenCapture.maskedFrames(in: root, hiding: .all)
         #expect(frames.contains(NSRect(x: 250, y: 160, width: 50, height: 20)))
     }
 }

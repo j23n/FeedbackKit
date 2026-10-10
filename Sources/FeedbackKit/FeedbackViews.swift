@@ -1,5 +1,10 @@
 #if canImport(UIKit) || canImport(AppKit)
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 extension View {
     /// Redacts what the configuration's redaction hides while the center captures the screen:
@@ -10,6 +15,46 @@ extension View {
         redacted(reason: center.isCapturing ? center.configuration.redaction.reasons : [])
     }
 }
+
+extension View {
+    /// Hides this view in a feedback screenshot, whatever the configuration's redaction: the capture paints over its
+    /// frame, so what UIKit or AppKit draw inside it (a picker's title, a text view) is hidden too, which
+    /// `privacySensitive()` can't reach. For the person's own data on a screen that otherwise stays visible, such as
+    /// what they typed or said. It works in sheets too: the capture finds the region in the window's views.
+    public func feedbackHidden(_ hidden: Bool = true) -> some View {
+        background {
+            if hidden { HiddenRegionMarker() }
+        }
+    }
+}
+
+#if canImport(UIKit)
+/// A region the capture paints over (`feedbackHidden()`), as it sits in the window's UIKit views.
+final class HiddenRegionView: UIView {}
+
+struct HiddenRegionMarker: UIViewRepresentable {
+    func makeUIView(context: Context) -> HiddenRegionView {
+        let view = HiddenRegionView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        return view
+    }
+
+    func updateUIView(_ view: HiddenRegionView, context: Context) {}
+}
+#elseif canImport(AppKit)
+/// A region the capture paints over (`feedbackHidden()`), as it sits in the window's AppKit views.
+final class HiddenRegionView: NSView {
+    // Clicks go to the view it's behind.
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+struct HiddenRegionMarker: NSViewRepresentable {
+    func makeNSView(context: Context) -> HiddenRegionView { HiddenRegionView() }
+
+    func updateNSView(_ view: HiddenRegionView, context: Context) {}
+}
+#endif
 
 extension CaptureRedaction {
     /// What SwiftUI redacts while the screen is captured.

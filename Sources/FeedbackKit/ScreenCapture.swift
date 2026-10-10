@@ -36,23 +36,28 @@ enum ScreenCapture {
         let image = renderer.image { _ in
             _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
             UIColor.systemGray3.setFill()
-            for frame in textFrames(in: window, hiding: text) {
+            for frame in maskedFrames(in: window, hiding: text) {
                 UIBezierPath(roundedRect: frame, cornerRadius: 4).fill()
             }
         }
         return image.pngData()
     }
 
-    /// Where, in the window, UIKit draws the text to hide.
-    static func textFrames(in window: UIWindow, hiding text: SystemText) -> [CGRect] {
-        guard text != .none else { return [] }
+    /// What to paint over, in the window's coordinates: the regions marked `feedbackHidden()`, and the text UIKit
+    /// draws that `text` asks to hide.
+    static func maskedFrames(in window: UIWindow, hiding text: SystemText) -> [CGRect] {
         var frames: [CGRect] = []
         func visit(_ view: UIView) {
             guard !view.isHidden, view.alpha > 0.01 else { return }
+            if view is HiddenRegionView {
+                let frame = view.convert(view.bounds, to: window).intersection(window.bounds)
+                if !frame.isEmpty { frames.append(frame) }
+                return
+            }
             // The tab bar's labels are the app's own words.
             if view is UITabBar { return }
             let typed = view is UITextField || (view as? UITextView)?.isEditable == true
-            if typed || (text == .all && (view is UILabel || view is UITextView)) {
+            if (typed && text != .none) || (text == .all && (view is UILabel || view is UITextView)) {
                 let frame = view.convert(view.bounds, to: window).intersection(window.bounds)
                 if !frame.isEmpty { frames.append(frame) }
                 return
@@ -81,7 +86,7 @@ enum ScreenCapture {
         let bounds = view.bounds
         guard let representation = view.bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
         view.cacheDisplay(in: bounds, to: representation)
-        let frames = textFrames(in: view, hiding: text)
+        let frames = maskedFrames(in: view, hiding: text)
         if !frames.isEmpty, let context = NSGraphicsContext(bitmapImageRep: representation) {
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current = context
@@ -97,14 +102,15 @@ enum ScreenCapture {
         return representation.representation(using: .png, properties: [:])
     }
 
-    /// Where, in `root`, AppKit draws the text to hide.
-    static func textFrames(in root: NSView, hiding text: SystemText) -> [NSRect] {
-        guard text != .none else { return [] }
+    /// What to paint over, in `root`'s coordinates: the regions marked `feedbackHidden()`, and the text AppKit draws
+    /// that `text` asks to hide.
+    static func maskedFrames(in root: NSView, hiding text: SystemText) -> [NSRect] {
         var frames: [NSRect] = []
         func visit(_ view: NSView) {
             guard !view.isHidden, view.alphaValue > 0.01 else { return }
             let typed = (view as? NSTextField)?.isEditable == true || (view as? NSTextView)?.isEditable == true
-            if typed || (text == .all && (view is NSTextField || view is NSTextView)) {
+            let marked = view is HiddenRegionView
+            if marked || (typed && text != .none) || (text == .all && (view is NSTextField || view is NSTextView)) {
                 var frame = view.convert(view.bounds, to: root).intersection(root.bounds)
                 // A text view scrolls: only the part its scroll view shows.
                 if let clip = view.enclosingScrollView?.contentView {

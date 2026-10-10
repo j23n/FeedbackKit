@@ -47,6 +47,7 @@ public enum CaptureRedaction: Sendable, Equatable {
     case allContent
     /// The app hides its values itself while `FeedbackCenter.isCapturing` is true.
     case custom
+    // In every mode, a view marked `feedbackHidden()` is painted over in the screenshot.
 }
 
 /// Where an app's reports go and what its form offers.
