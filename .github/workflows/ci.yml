@@ -38,9 +38,14 @@ jobs:
       - name: Build for the iOS Simulator
         # Runs even when the Mac failed, so one run reports both platforms' errors.
         if: success() || failure()
-        run: >
-          xcodebuild build -quiet
-          -scheme FeedbackKit
-          -destination 'generic/platform=iOS Simulator'
-          -derivedDataPath "${{ runner.temp }}/DerivedData"
-          SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+        run: |
+          status=0
+          xcodebuild build \
+            -scheme FeedbackKit \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "${{ runner.temp }}/DerivedData" \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES > "${{ runner.temp }}/ios.log" 2>&1 || status=$?
+          grep -E 'error:|warning:|SwiftCompile .*FeedbackKit|BUILD (SUCCEEDED|FAILED)' "${{ runner.temp }}/ios.log" || true
+          test "$status" -eq 0
+          # FeedbackKit itself was compiled for iOS, not skipped.
+          find "${{ runner.temp }}/DerivedData/Build" -path '*iphonesimulator*' -name 'FeedbackKit.swiftmodule' | grep -q .
