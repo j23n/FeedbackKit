@@ -110,7 +110,7 @@ public final class FeedbackCenter {
         if redacts { setCapturing(true) }
         // Lets SwiftUI draw the hidden values, and a menu or banner close, before the capture.
         try? await Task.sleep(for: .milliseconds(redacts ? 150 : 50))
-        let screenshot = ScreenCapture.capture()
+        let screenshot = ScreenCapture.capture(hiding: configuration.redaction.systemText)
         if redacts { setCapturing(false) }
 
         let form = FeedbackForm(

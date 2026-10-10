@@ -35,8 +35,16 @@ public enum CaptureRedaction: Sendable, Equatable {
     /// The screen is captured as it is.
     case none
     /// Views marked `privacySensitive()` are redacted while the screen is captured
-    /// (FeedbackKit's `feedbackRedaction(_:)` on the root view does it).
+    /// (FeedbackKit's `feedbackRedaction(_:)` on each window's root view does it), and the text
+    /// in text fields and editable text views is painted over in the screenshot.
     case privacySensitiveViews
+    /// Everything the app's views show is hidden, for an app whose screens are mostly the
+    /// user's own data: while the screen is captured, SwiftUI draws placeholders for all text and
+    /// images (`feedbackRedaction(_:)` on each window's root view), and the text UIKit or AppKit
+    /// draws itself, which SwiftUI's redaction doesn't reach (navigation and window titles,
+    /// buttons' titles, text fields), is painted over in the screenshot. Only the tab bar's
+    /// labels, the app's own words, stay. A view marked `unredacted()` is drawn as it is.
+    case allContent
     /// The app hides its values itself while `FeedbackCenter.isCapturing` is true.
     case custom
 }

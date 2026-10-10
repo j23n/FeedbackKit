@@ -14,5 +14,7 @@ let package = Package(
         .target(name: "FeedbackCore"),
         .target(name: "FeedbackKit", dependencies: ["FeedbackCore"]),
         .testTarget(name: "FeedbackCoreTests", dependencies: ["FeedbackCore"]),
+        // The capture's AppKit side; empty where there's no AppKit.
+        .testTarget(name: "FeedbackKitTests", dependencies: ["FeedbackKit"]),
     ]
 )

@@ -8,9 +8,11 @@ No third-party code. The only network calls are two GitHub REST calls, with a to
 
 - **Starting a report**: shake the iPhone or iPad; take a screenshot, and a banner offers to send the screen for a few seconds; Help › Send Feedback… on the Mac and on iPad (`FeedbackCommands`); or a `FeedbackButton` anywhere. Each can be turned off in Settings (`FeedbackSettingsSection`).
 - **The capture** draws the app's key window, so it needs no permission: `drawHierarchy` on iOS, `cacheDisplay` on the Mac. On the Mac it captures the key window, which is the sheet when one is open.
-- **Hiding values** before the capture (`CaptureRedaction`):
-  - `.privacySensitiveViews`: views marked `.privacySensitive()` are redacted for the capture. Put `.feedbackRedaction(center)` on the root view.
+- **Hiding values** before the capture (`CaptureRedaction`). Put `.feedbackRedaction(center)` on the root view of each of the app's windows (the main window, Settings, a menu bar extra's window):
+  - `.allContent`, for an app whose screens are mostly the user's own data: SwiftUI draws placeholders for all text and images for the capture, and the text UIKit or AppKit draws itself, which SwiftUI's redaction doesn't reach (navigation and window titles, buttons' titles, text fields), is painted over in the screenshot. Only the tab bar's labels stay. Mark a view `.unredacted()` to show it as it is. The screenshot keeps the screen's layout and the app's chrome, and no value, name or word of the user's.
+  - `.privacySensitiveViews`: views marked `.privacySensitive()` are redacted for the capture, and what's in text fields is painted over.
   - `.custom`: the app hides its values itself while `center.isCapturing` is true, as an app with a "Hide Amounts" mode already can.
+  - Shapes stay: a chart without its labels keeps its lines and bars.
 - **Markup** on iPhone and iPad opens the screenshot in Quick Look with the system's Markup tools. (The Mac doesn't offer Markup yet; PaperKit's `MarkupToolbarViewController` is the way to add it.)
 - **Details** sent with every report: the app's name, version and build, the commit if the build writes `FeedbackGitCommit` into Info.plist, the system, the device model, the window's size, the appearance, the text size, the locale, the screen (`center.currentScreen`) and whatever `center.additionalContext` adds. The form lists them before you send.
 - **The outbox**: a report is saved in `Application Support/FeedbackKit/Outbox` first and sent when it can be: right away, when the app becomes active, or with Send Now in Settings. Without a network or a token, nothing is lost.

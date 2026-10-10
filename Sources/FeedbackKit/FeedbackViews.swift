@@ -2,11 +2,32 @@
 import SwiftUI
 
 extension View {
-    /// Redacts the views marked `privacySensitive()` while the center captures the screen, when
-    /// its configuration's redaction is `.privacySensitiveViews`. Apply it once, to the root view.
+    /// Redacts what the configuration's redaction hides while the center captures the screen:
+    /// the views marked `privacySensitive()` (`.privacySensitiveViews`), or all text and images
+    /// (`.allContent`). Apply it to the root view of each of the app's windows.
     @MainActor
     public func feedbackRedaction(_ center: FeedbackCenter) -> some View {
-        redacted(reason: center.configuration.redaction == .privacySensitiveViews && center.isCapturing ? .privacy : [])
+        redacted(reason: center.isCapturing ? center.configuration.redaction.reasons : [])
+    }
+}
+
+extension CaptureRedaction {
+    /// What SwiftUI redacts while the screen is captured.
+    var reasons: RedactionReasons {
+        switch self {
+        case .none, .custom: []
+        case .privacySensitiveViews: .privacy
+        case .allContent: [.placeholder, .privacy]
+        }
+    }
+
+    /// What the capture paints over of the text UIKit or AppKit draws.
+    var systemText: SystemText {
+        switch self {
+        case .none, .custom: .none
+        case .privacySensitiveViews: .typed
+        case .allContent: .all
+        }
     }
 }
 
