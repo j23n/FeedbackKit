@@ -24,6 +24,15 @@ jobs:
       - name: Test
         run: swift test
 
+  claude-rules:
+    name: Shared Claude rules are current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          curl -fsSL https://raw.githubusercontent.com/j23n/apple-ci/main/claude/update.sh | sh -s -- --check ||
+            echo "::warning::.apple-ci/claude differs from j23n/apple-ci's claude/: run its update.sh"
+
   apple:
     name: macOS · package, iOS Simulator and Mac
     runs-on: macos-26
