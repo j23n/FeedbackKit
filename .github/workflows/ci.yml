@@ -1,13 +1,14 @@
 name: CI
 
+# One run per commit, its push's: a pull request here starts no run of its own.
 on:
   push:
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# A newer push to the same branch or pull request cancels the run in progress.
+# A newer push to the same branch cancels the run in progress.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
